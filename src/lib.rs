@@ -12,7 +12,6 @@ const SIMD_LANE_LEN: usize = 8;
 const SIMD_TIMES_TABLE: Simd<SimdT, SIMD_LANE_LEN> = Simd::from_array(create_times_table());
 const SIMD_CTOI_TABLE: Simd<SimdT, SIMD_LANE_LEN> = Simd::from_array([0x30; SIMD_LANE_LEN]);
 
-
 /// 將文字轉成數字
 pub fn atoi(s: &str) -> SimdT {
     let v = s.as_bytes();
@@ -69,12 +68,11 @@ const MAX_BLOCKS: usize = MAX_LANES / SIMD_LANE_LEN;
 /// `foreach` 之後 `sum` 不會影響最終結果～
 pub fn bytes_to_vectors(v: &[u8]) -> [[SimdT; SIMD_LANE_LEN]; MAX_BLOCKS] {
     let mut result = [['0' as SimdT; SIMD_LANE_LEN]; MAX_BLOCKS];
-
-    // FIXME: more meaningful spliting
-    v.rchunks(SIMD_LANE_LEN).enumerate().for_each(|(i, v)| {
-        result[SIMD_LANE_LEN - i - 1] = bytes_to_vector(v);
-    });
-
+    v.rchunks(SIMD_LANE_LEN)
+        .zip(result.iter_mut().rev())
+        .for_each(|(v, arr)| {
+            *arr = bytes_to_vector(v);
+        });
     result
 }
 
@@ -117,7 +115,10 @@ mod tests {
     #[test]
     fn test_bytes_to_vector() {
         // ASCII('0') = 48
-        assert_eq!(crate::bytes_to_vector(b"123"), [48, 48, 48, 48, 48, 49, 50, 51]);
+        assert_eq!(
+            crate::bytes_to_vector(b"123"),
+            [48, 48, 48, 48, 48, 49, 50, 51]
+        );
     }
 
     #[test]
