@@ -15,27 +15,28 @@ const SIMD_CTOI_TABLE: Simd<SimdT, SIMD_LANE_LEN> = Simd::from_array([0x30; SIMD
 /// 將文字轉成數字
 pub fn atoi(s: &str) -> SimdT {
     let v = s.as_bytes();
-    let mut result = Simd::<SimdT, SIMD_LANE_LEN>::splat(0);
+    let result = bytes_to_vectors(v)
+        .into_iter()
+        .enumerate()
+        .map(|(index, vector)| {
+            let base = MAX_BLOCKS - index - 1;
+            let times = 10u32
+                .checked_pow((base * SIMD_LANE_LEN) as u32)
+                .unwrap_or(0);
+            let mut simd_vector = Simd::from_array(vector);
 
-    for (index, vector) in bytes_to_vectors(v).into_iter().enumerate() {
-        let base = MAX_BLOCKS - index - 1;
-        let times = 10u32
-            .checked_pow((base * SIMD_LANE_LEN) as u32)
-            .unwrap_or(0);
-        let mut simd_vector = Simd::from_array(vector);
+            // 對每個 binary 乘以 0x30
+            simd_vector ^= SIMD_CTOI_TABLE;
+            // 然後根據 TIMES_TABLE 乘上 10 倍數
+            simd_vector *= SIMD_TIMES_TABLE;
+            // 假如是 [[0, ..., 1], [2, ..., 9]]，則前者應乘以 10^8，後者應乘以 10^0
+            simd_vector *= Simd::splat(times);
 
-        // 對每個 binary 乘以 0x30
-        simd_vector ^= SIMD_CTOI_TABLE;
-        // 然後根據 TIMES_TABLE 乘上 10 倍數
-        simd_vector *= SIMD_TIMES_TABLE;
-        // 假如是 [[0, ..., 1], [2, ..., 9]]，則前者應乘以 10^8，後者應乘以 10^0
-        simd_vector *= Simd::splat(times);
+            simd_vector
+        })
+        .sum::<Simd<SimdT, SIMD_LANE_LEN>>();
 
-        result += simd_vector;
-    }
-
-    let a = result.to_array();
-    a.iter().sum()
+    result.to_array().iter().sum()
 }
 
 /// 將輸入的片段 char code 轉成符合 `SIMD_LANE_LEN` 長度的向量
