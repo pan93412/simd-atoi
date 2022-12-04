@@ -43,7 +43,7 @@ pub fn atoi(s: &str) -> SimdT {
 /// 假設輸入 `1, 2, 3`，這段命令會把它轉成 `00000123`。
 /// 得到的結果可以直接與 TimesTable 相乘，最後 .sum()
 /// 即可得到結果。
-pub fn bytes_to_vector(s: &[u8]) -> [SimdT; SIMD_LANE_LEN] {
+fn bytes_to_vector(s: &[u8]) -> [SimdT; SIMD_LANE_LEN] {
     let mut result = ['0' as SimdT; SIMD_LANE_LEN];
 
     s.iter()
@@ -64,13 +64,15 @@ const MAX_BLOCKS: usize = MAX_LANES / SIMD_LANE_LEN;
 /// 為了不要在 heap 分配，實際上我們回傳的是一個固定長度的陣列。
 /// 長度是根據 `MAX_LANES` 推算的，而預設元素是一個無效果的空陣列 (`[0; SIMD_LANE_LEN]`)
 /// `foreach` 之後 `sum` 不會影響最終結果～
-pub fn bytes_to_vectors(v: &[u8]) -> [[SimdT; SIMD_LANE_LEN]; MAX_BLOCKS] {
+fn bytes_to_vectors(v: &[u8]) -> [[SimdT; SIMD_LANE_LEN]; MAX_BLOCKS] {
     let mut result = [['0' as SimdT; SIMD_LANE_LEN]; MAX_BLOCKS];
+
     v.rchunks(SIMD_LANE_LEN)
         .zip(result.iter_mut().rev())
         .for_each(|(v, arr)| {
             *arr = bytes_to_vector(v);
         });
+
     result
 }
 
