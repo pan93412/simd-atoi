@@ -269,33 +269,33 @@ pub fn atoi_benchmark(c: &mut Criterion) {
         let cstr = CString::new(input.as_bytes()).unwrap();
 
         group.bench_with_input(BenchmarkId::new("simd_atoi", input), input, |b, input| {
-            b.iter(|| atoi::atoi(black_box(input)))
+            b.iter(|| black_box(atoi::atoi(black_box(input))))
         });
 
         group.bench_with_input(BenchmarkId::new("parse_atoi", input), input, |b, input| {
-            b.iter(|| black_box(input).parse::<u32>().unwrap())
+            b.iter(|| black_box(black_box(input).parse::<u32>().unwrap()))
         });
 
         group.bench_with_input(BenchmarkId::new("c_atoi", input), &cstr, |b, input| {
-            b.iter(|| unsafe { atoi(black_box(input).as_ptr()) })
+            b.iter(|| black_box(unsafe { atoi(black_box(input).as_ptr()) }))
         });
 
         group.bench_with_input(
             BenchmarkId::new("leetcode_0ms_atoi", input),
             input,
-            |b, input| b.iter(|| leetcode_0ms_atoi(black_box(input))),
+            |b, input| b.iter(|| black_box(leetcode_0ms_atoi(black_box(input)))),
         );
 
         group.bench_with_input(
             BenchmarkId::new("leetcode_3ms_atoi", input),
             input,
-            |b, input| b.iter(|| leetcode_3ms_atoi(black_box(input))),
+            |b, input| b.iter(|| black_box(leetcode_3ms_atoi(black_box(input)))),
         );
 
         group.bench_with_input(
             BenchmarkId::new("leetcode_8ms_atoi", input),
             input,
-            |b, input| b.iter(|| leetcode_8ms_atoi(black_box(input))),
+            |b, input| b.iter(|| black_box(leetcode_8ms_atoi(black_box(input)))),
         );
     }
 }
