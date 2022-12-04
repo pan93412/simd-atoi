@@ -16,25 +16,24 @@ const SIMD_CTOI_TABLE: Simd<SimdT, SIMD_LANE_LEN> = Simd::from_array([0x30; SIMD
 /// 將文字轉成數字
 pub fn atoi(s: &str) -> SimdT {
     let v = s.as_bytes();
+    let mut result = Simd::<SimdT, SIMD_LANE_LEN>::splat(0);
 
-    let result = bytes_to_vectors(v)
-        .into_iter()
-        // 將 binary 向量轉成 SIMD vector
-        .map(Simd::from_array)
-        // 對每個 binary 乘以 0x30，然後根據 TIMES_TABLE 乘上 10 倍數
-        .map(|v| (v ^ SIMD_CTOI_TABLE) * SIMD_TIMES_TABLE)
-        .enumerate()
+    for (index, vector) in bytes_to_vectors(v).into_iter().enumerate() {
+        let base = MAX_BLOCKS - index - 1;
+        let times = 10u32
+            .checked_pow((base * SIMD_LANE_LEN) as u32)
+            .unwrap_or(0);
+        let mut simd_vector = Simd::from_array(vector);
+
+        // 對每個 binary 乘以 0x30
+        simd_vector ^= SIMD_CTOI_TABLE;
+        // 然後根據 TIMES_TABLE 乘上 10 倍數
+        simd_vector *= SIMD_TIMES_TABLE;
         // 假如是 [[0, ..., 1], [2, ..., 9]]，則前者應乘以 10^8，後者應乘以 10^0
-        .map(|(curblk, v)| {
-            let base = MAX_BLOCKS - curblk - 1;
+        simd_vector *= Simd::splat(times);
 
-            v * Simd::splat(
-                10u32
-                    .checked_pow((base * SIMD_LANE_LEN) as u32)
-                    .unwrap_or(0),
-            )
-        })
-        .fold(Simd::splat(0), |acc, v| acc + v);
+        result += simd_vector;
+    }
 
     let a = result.to_array();
     a.iter().sum()
