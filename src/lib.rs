@@ -46,11 +46,9 @@ pub fn atoi(s: &str) -> SimdT {
 pub fn bytes_to_vector(s: &[u8]) -> [SimdT; SIMD_LANE_LEN] {
     let mut result = ['0' as SimdT; SIMD_LANE_LEN];
 
-    assert!(s.len() <= 8);
-
-    for (i, c) in s.iter().enumerate() {
-        result[(SIMD_LANE_LEN - s.len() + i)] = *c as SimdT;
-    }
+    s.iter()
+        .zip(result.iter_mut().skip(SIMD_LANE_LEN - s.len()))
+        .for_each(|(char, array)| *array = *char as SimdT);
 
     result
 }
